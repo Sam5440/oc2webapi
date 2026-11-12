@@ -1,0 +1,129 @@
+/* highlight.js 主题（github / github-dark），作用域限定在 .md / .dark .md */
+
+/* --- light --- */
+.md pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+.md code.hljs {
+  padding: 3px 5px
+}
+.md .hljs {
+  color: #24292e;
+  background: #ffffff
+}
+.md .hljs-doctag,.md .hljs-keyword,.md .hljs-meta .hljs-keyword,.md .hljs-template-tag,.md .hljs-template-variable,.md .hljs-type,.md .hljs-variable.language_ {
+  color: #d73a49
+}
+.md .hljs-title,.md .hljs-title.class_,.md .hljs-title.class_.inherited__,.md .hljs-title.function_ {
+  color: #6f42c1
+}
+.md .hljs-attr,.md .hljs-attribute,.md .hljs-literal,.md .hljs-meta,.md .hljs-number,.md .hljs-operator,.md .hljs-variable,.md .hljs-selector-attr,.md .hljs-selector-class,.md .hljs-selector-id {
+  color: #005cc5
+}
+.md .hljs-regexp,.md .hljs-string,.md .hljs-meta .hljs-string {
+  color: #032f62
+}
+.md .hljs-built_in,.md .hljs-symbol {
+  color: #e36209
+}
+.md .hljs-comment,.md .hljs-code,.md .hljs-formula {
+  color: #6a737d
+}
+.md .hljs-name,.md .hljs-quote,.md .hljs-selector-tag,.md .hljs-selector-pseudo {
+  color: #22863a
+}
+.md .hljs-subst {
+  color: #24292e
+}
+.md .hljs-section {
+  color: #005cc5;
+  font-weight: bold
+}
+.md .hljs-bullet {
+  color: #735c0f
+}
+.md .hljs-emphasis {
+  color: #24292e;
+  font-style: italic
+}
+.md .hljs-strong {
+  color: #24292e;
+  font-weight: bold
+}
+.md .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4
+}
+.md .hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0
+}
+.md .hljs-char.escape_,.md .hljs-link,.md .hljs-params,.md .hljs-property,.md .hljs-punctuation,.md .hljs-tag {
+  
+}
+
+/* --- dark --- */
+.dark .md pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+.dark .md code.hljs {
+  padding: 3px 5px
+}
+.dark .md .hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.dark .md .hljs-doctag,.dark .md .hljs-keyword,.dark .md .hljs-meta .hljs-keyword,.dark .md .hljs-template-tag,.dark .md .hljs-template-variable,.dark .md .hljs-type,.dark .md .hljs-variable.language_ {
+  color: #ff7b72
+}
+.dark .md .hljs-title,.dark .md .hljs-title.class_,.dark .md .hljs-title.class_.inherited__,.dark .md .hljs-title.function_ {
+  color: #d2a8ff
+}
+.dark .md .hljs-attr,.dark .md .hljs-attribute,.dark .md .hljs-literal,.dark .md .hljs-meta,.dark .md .hljs-number,.dark .md .hljs-operator,.dark .md .hljs-variable,.dark .md .hljs-selector-attr,.dark .md .hljs-selector-class,.dark .md .hljs-selector-id {
+  color: #79c0ff
+}
+.dark .md .hljs-regexp,.dark .md .hljs-string,.dark .md .hljs-meta .hljs-string {
+  color: #a5d6ff
+}
+.dark .md .hljs-built_in,.dark .md .hljs-symbol {
+  color: #ffa657
+}
+.dark .md .hljs-comment,.dark .md .hljs-code,.dark .md .hljs-formula {
+  color: #8b949e
+}
+.dark .md .hljs-name,.dark .md .hljs-quote,.dark .md .hljs-selector-tag,.dark .md .hljs-selector-pseudo {
+  color: #7ee787
+}
+.dark .md .hljs-subst {
+  color: #c9d1d9
+}
+.dark .md .hljs-section {
+  color: #1f6feb;
+  font-weight: bold
+}
+.dark .md .hljs-bullet {
+  color: #f2cc60
+}
+.dark .md .hljs-emphasis {
+  color: #c9d1d9;
+  font-style: italic
+}
+.dark .md .hljs-strong {
+  color: #c9d1d9;
+  font-weight: bold
+}
+.dark .md .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16
+}
+.dark .md .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.dark .md .hljs-char.escape_,.dark .md .hljs-link,.dark .md .hljs-params,.dark .md .hljs-property,.dark .md .hljs-punctuation,.dark .md .hljs-tag {
+  
+}

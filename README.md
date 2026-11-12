@@ -10,9 +10,10 @@
 
 ## ✨ 功能
 
-- **开箱即用**：纯静态页面 + 一个边缘函数，部署后打开即用，使用 OpenCode 匿名免费通道（`Bearer public`）。
+- **开箱即用**：React + Vite 静态站 + 一个边缘函数，部署后打开即用，使用 OpenCode 匿名免费通道（`Bearer public`）。
+- **shadcn/ui 全量组件化界面**：Radix UI 交互原语 + Tailwind CSS v4 设计令牌，亮 / 暗 / 跟随系统三档主题。
 - **多会话管理**：侧栏新建 / 切换 / 重命名 / 置顶 / 删除会话，全部数据只保存在你的浏览器 `localStorage`，支持 JSON 备份导入导出。
-- **完整 Markdown 渲染**：用户与助手双侧消息均渲染 GFM——标题、表格、任务列表、引用、行内代码；代码块带语法高亮（highlight.js）与一键复制；支持亮 / 暗 / 跟随系统三档主题。
+- **完整 Markdown 渲染**：用户与助手双侧消息均渲染 GFM——标题、表格、任务列表、引用、行内代码；代码块带语法高亮（highlight.js）与一键复制。
 - **思考过程**：推理模型的 `reasoning_content` 以可折叠面板流式展示。
 - **对话导出**：一键导出为 Markdown（.md）、自包含 HTML 文档（.html，可直接导入 Word）、纯文本（.txt），或直接打印 / 另存为 PDF。
 - **流式输出**：SSE 实时渲染，可随时停止；显示 token 用量。
@@ -28,20 +29,20 @@
 
 部署完成后打开分配的 `*.vercel.app` 域名即可使用。
 
-### 本地运行
+### 本地开发
 
-无需构建、无需 Node 依赖：
+技术栈：**React 19 + Vite + Tailwind CSS v4 + shadcn/ui**（组件库含全部 UI 交互），需要 Node.js 20+：
 
 ```bash
 git clone https://github.com/Sam5440/oc2webapi.git
 cd oc2webapi
-# 任选一种静态服务器
-python3 -m http.server 8080
-# 或 npx serve .
+npm install
+npm run dev     # http://localhost:5173
+npm run build   # 产物输出到 dist/
 ```
 
-> 注意：本地以 `file://` 直接打开不可用（ES Module 限制）。本地静态服务下，`/api` 中转不存在，
-> 页面会自动使用浏览器直连通道；普通浏览器受 CORS 限制无法直连推理接口，完整体验请部署到 Vercel。
+> 本地 dev 下 `/api` 代理到 `localhost:8940`（可用 `MOCK=1 npm run dev` 代理到 8931 的 mock 中转）。
+> 未运行中转时模型列表仍可用（浏览器直连 GET），推理请求需部署到 Vercel 或自建中转。
 
 ### 从源码部署到自己的 Vercel
 
@@ -84,16 +85,16 @@ OpenCode 免费档只接受"官方 CLI 形状"的请求，本项目在浏览器�
 代码结构：
 
 ```
-api/[[...path]].js      # Vercel Edge Function：白名单透传中转（流式）
-assets/js/oc.js         # OpenCode 协议客户端：身份铸造、请求整形、SSE 解析
-assets/js/transport.js  # 通道层：直连 / 中转 / 自动回退
-assets/js/chat.js       # 对话引擎：发送循环、工具降级续轮
-assets/js/models.js     # 模型目录（GET /v1/models，浏览器直连 + 缓存）
-assets/js/store.js      # localStorage 会话持久化
-assets/js/ui.js         # 界面渲染与交互
-assets/js/markdown.js   # marked + DOMPurify + highlight.js 渲染管线
-assets/js/export.js     # 对话导出（MD / HTML / TXT / 打印）
-assets/oc2/             # 官方 CLI 提示词与工具集（来自 opencode2api 逆向资产）
+api/[...path].js          # Vercel Edge Function：白名单透传中转（流式）
+src/lib/oc.ts             # OpenCode 协议客户端：身份铸造、请求整形、SSE 解析
+src/lib/transport.ts      # 通道层：直连 / 中转 / 自动回退
+src/lib/chat.ts           # 对话引擎：发送循环、工具降级续轮
+src/lib/models.ts         # 模型目录（GET /v1/models，浏览器直连 + 缓存）
+src/lib/store.ts          # localStorage 会话持久化（useSyncExternalStore 绑定）
+src/lib/markdown.ts       # marked + DOMPurify + highlight.js 渲染管线
+src/lib/export.ts         # 对话导出（MD / HTML / TXT / 打印）
+src/components/           # React UI（shadcn/ui 组件 + 应用组件）
+src/assets/oc2/           # 官方 CLI 提示词与工具集（来自 opencode2api 逆向资产）
 ```
 
 ## ⚙️ 配置
