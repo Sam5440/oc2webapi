@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="oc2webapi — 在浏览器中直接使用 OpenCode 免费模型的对话界面，支持多会话、Markdown 渲染与文档导出">
+<title>oc2webapi · OpenCode 免费模型对话</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%235865f2'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace' font-weight='bold'%3Eoc2%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="./assets/css/hljs-scoped.css">
+<link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 侧栏：会话管理 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">
+        <span class="brand-logo">oc2</span>
+        <span class="brand-name">oc2webapi</span>
+      </div>
+      <button id="btn-close-sidebar" class="icon-btn sidebar-close" aria-label="收起侧栏">✕</button>
+    </div>
+    <button id="btn-new-chat" class="new-chat-btn">＋ 新对话</button>
+    <div id="session-list" class="session-list" role="listbox" aria-label="会话列表"></div>
+    <div class="sidebar-foot">
+      <button id="btn-settings" class="ghost-btn">⚙ 设置</button>
+      <button id="btn-theme" class="ghost-btn" title="切换主题">🌗 主题</button>
+    </div>
+  </aside>
+  <div id="sidebar-mask" class="sidebar-mask"></div>
+
+  <!-- 主区 -->
+  <main class="main">
+    <header class="topbar">
+      <button id="btn-open-sidebar" class="icon-btn only-mobile" aria-label="打开侧栏">☰</button>
+      <div class="model-picker-wrap">
+        <button id="btn-model-picker" class="model-picker" aria-haspopup="listbox">
+          <span id="model-picker-label">加载模型中…</span>
+          <span class="caret">▾</span>
+        </button>
+        <div id="model-popover" class="model-popover" hidden>
+          <input id="model-search" class="model-search" type="search" placeholder="搜索模型…" autocomplete="off">
+          <div id="model-list" class="model-list" role="listbox"></div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="transport-badge" class="transport-badge" title="请求通道">通道：自动</span>
+        <div class="dropdown-wrap">
+          <button id="btn-export" class="ghost-btn" aria-haspopup="menu">⬇ 导出</button>
+          <div id="export-menu" class="dropdown-menu" hidden>
+            <button data-format="md">📄 Markdown (.md)</button>
+            <button data-format="html">🌐 HTML 文档 (.html)</button>
+            <button data-format="txt">📃 纯文本 (.txt)</button>
+            <button data-format="print">🖨️ 打印 / PDF</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="banner" class="banner" hidden></div>
+
+    <div id="chat-scroll" class="chat-scroll">
+      <div id="empty-state" class="empty-state">
+        <div class="empty-logo">oc2</div>
+        <h1>OpenCode 免费模型 · 网页直聊</h1>
+        <p>无需注册、无需服务器账号——请求由你的浏览器发出，对话只保存在本地。</p>
+        <div class="suggest-grid" id="suggest-grid">
+          <button data-prompt="用通俗的语言解释一下什么是 WebSocket，以及它和 HTTP 长轮询的区别">解释 WebSocket 与长轮询的区别</button>
+          <button data-prompt="帮我写一个 Python 脚本：遍历指定目录，找出所有重复文件（按内容哈希），输出分组报告">写一个查重文件的 Python 脚本</button>
+          <button data-prompt="把这句话翻译成地道英文：「这个方案还不够成熟，我们需要更多数据来支撑决策。」">中译英：方案不够成熟…</button>
+          <button data-prompt="为初学者制定一份 4 周的 Go 语言学习计划，每周给出目标和练手项目">4 周 Go 语言学习计划</button>
+        </div>
+        <p class="empty-note" id="empty-note"></p>
+      </div>
+      <div id="messages" class="messages"></div>
+    </div>
+
+    <footer class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行…"></textarea>
+        <div class="composer-actions">
+          <span id="composer-hint" class="composer-hint"></span>
+          <button id="btn-stop" class="send-btn stop" hidden aria-label="停止生成">■ 停止</button>
+          <button id="btn-send" class="send-btn" aria-label="发送">↑</button>
+        </div>
+      </div>
+      <p class="disclaimer">
+        由社区逆向的 OpenCode 免费通道驱动 · 仅供学习研究 · 对话仅存于你的浏览器
+        · <a href="https://github.com/Sam5440/oc2webapi" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+  </main>
+
+  <!-- 设置弹窗 -->
+  <div id="settings-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>设置</h2>
+        <button id="btn-close-settings" class="icon-btn" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <section>
+          <h3>请求通道</h3>
+          <p class="field-hint">OpenCode 推理接口未开放 CORS：「自动」会先尝试浏览器直连（真实用户 IP），失败后走中转。</p>
+          <div class="segmented" id="transport-mode">
+            <button data-value="auto">自动（推荐）</button>
+            <button data-value="direct">仅直连</button>
+            <button data-value="relay">仅中转</button>
+          </div>
+        </section>
+        <section>
+          <h3>中转地址</h3>
+          <input id="relay-base" type="url" placeholder="默认同源 /api（Vercel Edge 函数）">
+          <p class="field-hint">可指向任意自建中转（需放行 /inference/* 与 /zen/* 路径并回传流式响应）。</p>
+        </section>
+        <section>
+          <h3>OpenCode Key（选填）</h3>
+          <input id="api-key" type="password" placeholder="留空使用匿名免费通道（Bearer public）">
+          <p class="field-hint">填入你的 Zen / Go Key 可绕过免费额度限制。Key 仅保存在本地浏览器。</p>
+        </section>
+        <section>
+          <h3>自定义指令（追加在官方提示词之后）</h3>
+          <textarea id="custom-instructions" rows="6"></textarea>
+          <p class="field-hint">免费档强制要求官方 OpenCode CLI 系统提示词，你的指令会接在其后；留空则使用默认网页助手设定。</p>
+          <button id="btn-reset-instructions" class="ghost-btn small">恢复默认</button>
+        </section>
+        <section>
+          <h3>数据</h3>
+          <div class="row-gap">
+            <button id="btn-export-data" class="ghost-btn small">导出全部会话 (JSON)</button>
+            <button id="btn-import-data" class="ghost-btn small">导入会话 (JSON)</button>
+            <button id="btn-clear-all" class="ghost-btn small danger">清空全部对话</button>
+          </div>
+          <input id="import-file" type="file" accept="application/json" hidden>
+        </section>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="./assets/vendor/marked.min.js"></script>
+<script src="./assets/vendor/purify.min.js"></script>
+<script src="./assets/vendor/highlight.min.js"></script>
+<script type="module" src="./assets/js/main.js"></script>
+</body>
+</html>

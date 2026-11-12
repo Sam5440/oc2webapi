@@ -1,0 +1,137 @@
+# oc2webapi
+
+**在浏览器里直接使用 OpenCode 免费模型的对话界面。** 无需注册、无需自建服务、无需数据库——打开网页即可与 OpenCode Zen 免费模型对话。
+
+多会话管理 · 双边消息完整 Markdown 渲染 · 对话导出为文档 · 请求默认由用户浏览器发出（用户 IP）。
+
+> 语言：[简体中文](#readme) ｜ [English](#english)
+
+---
+
+## ✨ 功能
+
+- **开箱即用**：纯静态页面 + 一个边缘函数，部署后打开即用，使用 OpenCode 匿名免费通道（`Bearer public`）。
+- **多会话管理**：侧栏新建 / 切换 / 重命名 / 置顶 / 删除会话，全部数据只保存在你的浏览器 `localStorage`，支持 JSON 备份导入导出。
+- **完整 Markdown 渲染**：用户与助手双侧消息均渲染 GFM——标题、表格、任务列表、引用、行内代码；代码块带语法高亮（highlight.js）与一键复制；支持亮 / 暗 / 跟随系统三档主题。
+- **思考过程**：推理模型的 `reasoning_content` 以可折叠面板流式展示。
+- **对话导出**：一键导出为 Markdown（.md）、自包含 HTML 文档（.html，可直接导入 Word）、纯文本（.txt），或直接打印 / 另存为 PDF。
+- **流式输出**：SSE 实时渲染，可随时停止；显示 token 用量。
+- **混合请求通道**（见下文「请求通道」）：自动模式优先浏览器直连（真实用户 IP），CORS 受限时自动回退同源边缘中转；也可自建中转。
+
+## 🚀 快速开始
+
+### 一键部署到 Vercel
+
+点击下方按钮，使用你的 GitHub 账号一键克隆并部署（免费 Hobby 计划即可）：
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSam5440%2Foc2webapi&project-name=oc2webapi&repository-name=oc2webapi)
+
+部署完成后打开分配的 `*.vercel.app` 域名即可使用。
+
+### 本地运行
+
+无需构建、无需 Node 依赖：
+
+```bash
+git clone https://github.com/Sam5440/oc2webapi.git
+cd oc2webapi
+# 任选一种静态服务器
+python3 -m http.server 8080
+# 或 npx serve .
+```
+
+> 注意：本地以 `file://` 直接打开不可用（ES Module 限制）。本地静态服务下，`/api` 中转不存在，
+> 页面会自动使用浏览器直连通道；普通浏览器受 CORS 限制无法直连推理接口，完整体验请部署到 Vercel。
+
+### 从源码部署到自己的 Vercel
+
+```bash
+npm i -g vercel
+vercel        # 首次按提示关联项目
+vercel --prod # 部署生产环境
+```
+
+## 🔀 请求通道
+
+OpenCode 的推理接口（`POST /inference/*`）**在服务端未开放 CORS**（实测预检 404、
+`access-control-allow-methods: GET, OPTIONS`），因此普通网页无法跨域读取推理响应；
+而 `GET /v1/models` 等只读接口完全开放 CORS。本项目据此设计三档通道：
+
+| 通道 | 行为 | 适用 |
+| --- | --- | --- |
+| **自动**（默认） | 每次请求先尝试浏览器直连（上游看到**用户真实 IP**，独享免费额度），被 CORS 拦截或额度/服务端错误时自动改走同源边缘中转并记住可用通道 | 绝大多数场景 |
+| **仅直连** | 全部请求从浏览器发出。需要浏览器禁用 CORS、安装放行扩展，或未来上游开放 CORS | 追求真实用户 IP |
+| **仅中转** | 全部请求经中转函数转发，上游看到部署平台出口 IP | 直连环境不可用 |
+
+说明：
+
+- **模型列表始终由浏览器直连获取**（该接口 CORS 全开），任何通道下都使用用户自己的 IP。
+- 中转函数只允许转发 `opencode.ai` 的 `/inference/*` 与 `/zen/*` 路径，**不是开放代理**；不存储任何请求内容。
+- 直连与中转的免费额度相互独立（出口 IP 不同）。自动模式在遇到 `429/5xx` 时会自动换通道重试一次。
+- 设置面板可自定义中转地址（指向任意自建中转），可选设置 `RELAY_TOKEN` 环境变量防止陌生人搭便车（请求头 `x-oc2-token` 匹配）。
+
+## 🧩 实现说明（协议逆向）
+
+OpenCode 免费档只接受"官方 CLI 形状"的请求，本项目在浏览器端完整复刻了该形状（细节逆向自 [opencode2api](https://github.com/jasonxu114514/opencode2api) 项目，协议资产 `prompt-v2.txt` 与 `tools-v2.json` 为官方 CLI 捕获原文）：
+
+- **身份**：会话 ID 按官方 `Identifier.descending()` 布局铸造（`ses_` + 48 位降序时间戳 hex + 14 位 Base62），每个会话固定一枚；项目 ID 为每次请求全新的 40 位 hex（免费档按 `(项目 ID, 出口 IP)` 记账配额）。
+- **请求体**：官方 CLI 键序 `model, messages, tools, stream, stream_options, max_completion_tokens`；强制 `stream: true`、`stream_options.include_usage: true`、`max_completion_tokens: 32000`。
+- **System Prompt**：完整注入官方 CLI 提示词 + `<env>` 环境块 + 内置技能清单（免费档校验其标记）；用户自定义指令只能追加在其后。
+- **工具整形**：追加官方 13 工具集（2.x 版），每个工具 `strict: false`；模型尝试调用工具时，客户端回写"工具不可用"并自动续轮（上限 4 轮），引导模型用纯文字回答。
+- **请求头**：`x-opencode-client: cli`、`x-opencode-session(-id)`、`x-session-affinity`、`X-Session-Id`、`x-opencode-project`、`Authorization: Bearer public`（匿名凭证区分大小写）。
+- **SSE 解析**：兼容 `delta.content` / `delta.reasoning_content` / `delta.tool_calls` / `usage` / 错误信封与 `[DONE]` 终止符。
+
+代码结构：
+
+```
+api/[[...path]].js      # Vercel Edge Function：白名单透传中转（流式）
+assets/js/oc.js         # OpenCode 协议客户端：身份铸造、请求整形、SSE 解析
+assets/js/transport.js  # 通道层：直连 / 中转 / 自动回退
+assets/js/chat.js       # 对话引擎：发送循环、工具降级续轮
+assets/js/models.js     # 模型目录（GET /v1/models，浏览器直连 + 缓存）
+assets/js/store.js      # localStorage 会话持久化
+assets/js/ui.js         # 界面渲染与交互
+assets/js/markdown.js   # marked + DOMPurify + highlight.js 渲染管线
+assets/js/export.js     # 对话导出（MD / HTML / TXT / 打印）
+assets/oc2/             # 官方 CLI 提示词与工具集（来自 opencode2api 逆向资产）
+```
+
+## ⚙️ 配置
+
+全部配置在页面「⚙ 设置」中，保存于本地浏览器：
+
+| 配置 | 说明 |
+| --- | --- |
+| 请求通道 | 自动 / 仅直连 / 仅中转 |
+| 中转地址 | 默认同源 `/api`；可指向自建中转 |
+| OpenCode Key | 选填 Zen / Go Key，绕过免费额度；仅保存在本地 |
+| 自定义指令 | 追加在官方提示词之后的人设与风格要求 |
+| 主题 | 亮 / 暗 / 跟随系统 |
+
+部署侧可选环境变量：`RELAY_TOKEN`（设置后中转要求请求头 `x-oc2-token` 匹配）。
+
+## 🔒 隐私
+
+- 对话内容、会话列表、设置**仅保存在你浏览器的 localStorage**，换浏览器 / 清缓存即消失。
+- 服务器（含中转函数）**不存储任何数据**；中转仅转发字节流。
+- 填入的 OpenCode Key 与对话内容一样只存本地。
+
+## ⚠️ 限制与免责声明
+
+- 免费额度由 OpenCode 按出口 IP 限额：换网络 / 等待可恢复；使用自己的 Zen/Go Key 可绕过。部署在 Vercel 上时，中转通道的额度由部署平台出口 IP 共享，高峰期更容易触发限流——这正是默认通道设计为"浏览器直连优先"的原因。
+- 本项目与 OpenCode 官方无关，属社区逆向实现，**仅供学习研究**；请遵守 OpenCode 服务条款，勿用于滥用场景。协议随上游变化可能失效，欢迎 issue / PR。
+- 网页端不执行任何工具（shell / 文件 / 联网抓取等），工具调用会被礼貌拒绝并要求模型改用文字回答。
+
+## 📄 License
+
+[GPL-3.0-or-later](LICENSE)。协议细节与协议资产来自 [opencode2api](https://github.com/jasonxu114514/opencode2api)（GPL-3.0），感谢原作者与 [LINUX DO](https://linux.do) 社区。
+
+---
+
+## English
+
+**oc2webapi** is a browser-only chat UI for OpenCode's free models (anonymous lane, `Bearer public`). Multi-session management, full Markdown rendering on both sides (GFM + syntax highlighting + copy buttons), conversation export (Markdown / self-contained HTML / plain text / print-to-PDF), and streaming SSE responses.
+
+**Hybrid transport**: OpenCode's inference endpoint is not CORS-enabled, so the page first tries a direct browser call (upstream sees the **user's real IP**, whose free quota is independent), and falls back to a same-origin Vercel Edge relay when CORS blocks the response. The model list (CORS-open) is always fetched directly from the browser. The relay is whitelist-limited to `opencode.ai` `/inference/*` and `/zen/*` paths and stores nothing.
+
+Deploy with the one-click Vercel button above, or `vercel --prod` from the repo. Optional env: `RELAY_TOKEN` (require an `x-oc2-token` header on relay calls). All chat data lives in your browser's localStorage only. Community reverse-engineering project for learning purposes; not affiliated with OpenCode. Protocol details and captured CLI assets come from [opencode2api](https://github.com/jasonxu114514/opencode2api) (GPL-3.0). Licensed under GPL-3.0-or-later.
