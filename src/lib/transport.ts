@@ -108,9 +108,9 @@ export function isAbortError(err: unknown): boolean {
 function transportHint(err: unknown, transport: TransportMode): string {
   const detail = err instanceof Error && err.message ? `（${err.message}）` : "";
   if (transport === "direct") {
-    return `浏览器直连失败${detail}。OpenCode 推理接口未开放 CORS，普通浏览器无法读取响应；请改用「自动」或「中转」通道。`;
+    return `浏览器直连失败${detail}。OpenCode 推理接口未开放 CORS，普通浏览器无法读取响应；请改用「自动」通道、安装设置里的「直连增强」油猴脚本，或改走中转。`;
   }
-  return `请求发送失败${detail}。请检查网络，或在设置中更换中转地址。`;
+  return `请求发送失败${detail}。请检查网络、安装设置里的「直连增强」油猴脚本，或在设置中更换中转地址。`;
 }
 
 export interface SendResult {

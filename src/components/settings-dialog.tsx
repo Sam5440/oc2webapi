@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Download, RotateCcw, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, RotateCcw, Trash2, Upload, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,16 +21,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { exportSession } from "@/lib/export";
+import { CORS_BRIDGE_SOURCE, CORS_BRIDGE_URL, type CorsBridgeInfo } from "@/lib/bridge";
 import { store, DEFAULT_INSTRUCTIONS, type AppSettings, type Session } from "@/lib/store";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settings: AppSettings;
+  bridge: CorsBridgeInfo | null;
   onSettingsChange: (patch: Partial<AppSettings>) => void;
 }
 
-export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange }: Props) {
+export function SettingsDialog({ open, onOpenChange, settings, bridge, onSettingsChange }: Props) {
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,6 +92,40 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
                 <SelectItem value="relay">仅中转</SelectItem>
               </SelectContent>
             </Select>
+          </section>
+
+          <section className="space-y-2.5">
+            <Label>浏览器直连增强</Label>
+            {bridge ? (
+              <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5 font-medium text-foreground">
+                  <Zap className="size-3.5" /> 已启用（油猴脚本 v{bridge.version}）
+                  {bridge.stats ? ` · 已桥接 ${bridge.stats.bridged} 个请求` : ""}
+                </p>
+                <p className="mt-1">
+                  推理请求由浏览器扩展后台发出，绕过 CORS 限制——仍是你的真实 IP，且保持流式输出，不依赖中转。
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  OpenCode 推理接口未开放 CORS，普通网页读不到直连响应。安装「CORS 桥」油猴脚本后，
+                  直连请求改由扩展后台发出，仍是你的 IP；需先装 Tampermonkey 或 Violentmonkey。
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={CORS_BRIDGE_URL} target="_blank" rel="noopener">
+                      <Zap className="size-3.5" /> 安装增强脚本
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href={CORS_BRIDGE_SOURCE} target="_blank" rel="noopener">
+                      <ExternalLink className="size-3.5" /> 查看源码
+                    </a>
+                  </Button>
+                </div>
+              </>
+            )}
           </section>
 
           <section className="space-y-2.5">

@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Zap } from "lucide-react";
 import { toast } from "sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChatView } from "@/components/chat-view";
@@ -12,6 +13,7 @@ import { ModelPicker } from "@/components/model-picker";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { Badge } from "@/components/ui/badge";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { detectCorsBridge } from "@/lib/bridge";
 import { ChatEngine } from "@/lib/chat";
 import { getModels, pickDefaultModel } from "@/lib/models";
 import { applyTheme } from "@/lib/theme";
@@ -39,6 +41,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 浏览器直连增强（油猴脚本）是否已接管 fetch
+  const [bridge] = useState(() => detectCorsBridge());
   // 流式渲染节流：引擎每帧最多触发一次重渲染
   const [streamTick, setStreamTick] = useState(0);
   const rafPending = useRef(false);
@@ -218,6 +222,15 @@ export default function App() {
             onSelect={handleModelChange}
           />
           <div className="ml-auto flex items-center gap-2">
+            {bridge && (
+              <Badge
+                variant="secondary"
+                className="hidden gap-1 text-[11px] sm:inline-flex"
+                title={`浏览器直连增强已启用（油猴脚本 v${bridge.version}）：推理请求由扩展后台发出，绕过 CORS，上游看到你的真实 IP。`}
+              >
+                <Zap className="size-3" /> 直连增强
+              </Badge>
+            )}
             <Badge variant="outline" className="hidden text-[11px] text-muted-foreground sm:inline-flex" title={TRANSPORT_TIP[settings.transportMode]}>
               {TRANSPORT_LABEL[settings.transportMode]}
             </Badge>
@@ -243,6 +256,7 @@ export default function App() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         settings={settings}
+        bridge={bridge}
         onSettingsChange={patchSettings}
       />
     </SidebarProvider>
